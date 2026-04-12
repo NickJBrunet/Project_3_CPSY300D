@@ -1,9 +1,10 @@
 import azure.functions as func
-from azure.storage.blob import BlobServiceClient
 import pandas as pd
 import io
 import json
 import os
+from azure.storage.blob import BlobServiceClient
+from utils.redis_client import get_redis_client
 
 def main(blob: func.InputStream):
     print("BLOB TRIGGER FIRED")
@@ -27,17 +28,24 @@ def main(blob: func.InputStream):
 
         print("DATA PROCESSED")
 
-        connect_str = os.getenv("AzureWebJobsStorage")
-        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        # TRY REDIS
+        r = get_redis_client()
 
-        container = "cache"
-        blob_name = "processed_data.json"
+        if r:
+            r.set("diet_data", json.dumps(result))
+            print("STORED IN REDIS")
+        else:
+            # fallback to blob
+            connect_str = os.getenv("AzureWebJobsStorage")
+            blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
-        blob_client = blob_service_client.get_blob_client(container=container, blob=blob_name)
+            blob_client = blob_service_client.get_blob_client(
+                container="cache",
+                blob="processed_data.json"
+            )
 
-        blob_client.upload_blob(json.dumps(result), overwrite=True)
-
-        print("CACHED RESULT STORED")
+            blob_client.upload_blob(json.dumps(result), overwrite=True)
+            print("STORED IN BLOB (fallback)")
 
     except Exception as e:
         print("ERROR:", str(e))
