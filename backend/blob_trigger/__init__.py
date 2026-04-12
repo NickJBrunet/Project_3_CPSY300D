@@ -7,45 +7,57 @@ from azure.storage.blob import BlobServiceClient
 from utils.redis_client import get_redis_client
 
 def main(blob: func.InputStream):
-    print("BLOB TRIGGER FIRED")
+	print("BLOB TRIGGER FIRED")
 
-    try:
-        content = blob.read()
-        df = pd.read_csv(io.BytesIO(content)).copy()
+	try:
+		content = blob.read()
+		df = pd.read_csv(io.BytesIO(content)).copy()
 
-        numeric_cols = ["Protein(g)", "Carbs(g)", "Fat(g)"]
-        df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce")
-        df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
+		numeric_cols = ["Protein(g)", "Carbs(g)", "Fat(g)"]
+		df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce")
+		df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
 
-        avg_macros = df.groupby("Diet_type")[numeric_cols].mean().reset_index()
-        avg_macros[numeric_cols] = avg_macros[numeric_cols].round(2)
+		avg_macros = df.groupby("Diet_type")[numeric_cols].mean().reset_index()
+		avg_macros[numeric_cols] = avg_macros[numeric_cols].round(2)
 
-        result = {
-            "total_records": int(len(df)),
-            "diet_types": int(df["Diet_type"].nunique()),
-            "avg_macros": avg_macros.to_dict(orient="records"),
-        }
+		recipes = df[[
+			"Diet_type",
+			"Recipe_name",
+			"Cuisine_type",
+			"Protein(g)",
+			"Carbs(g)",
+			"Fat(g)"
+		]].to_dict(orient="records")
 
-        print("DATA PROCESSED")
+		result = {
+			"summary": {
+				"total_records": int(len(df)),
+				"diet_types": int(df["Diet_type"].nunique())
+			},
+			"recipes": recipes,
+			"avg_macros": avg_macros.to_dict(orient="records")
+		}
 
-        # TRY REDIS
-        r = get_redis_client()
+		print("DATA PROCESSED")
 
-        if r:
-            r.set("diet_data", json.dumps(result))
-            print("STORED IN REDIS")
-        else:
-            # fallback to blob
-            connect_str = os.getenv("AzureWebJobsStorage")
-            blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+		# TRY REDIS
+		r = get_redis_client()
 
-            blob_client = blob_service_client.get_blob_client(
-                container="cache",
-                blob="processed_data.json"
-            )
+		if r:
+			r.set("diet_data", json.dumps(result))
+			print("STORED IN REDIS")
+		else:
+			# fallback to blob
+			connect_str = os.getenv("AzureWebJobsStorage")
+			blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
-            blob_client.upload_blob(json.dumps(result), overwrite=True)
-            print("STORED IN BLOB (fallback)")
+			blob_client = blob_service_client.get_blob_client(
+				container="cache",
+				blob="processed_data.json"
+			)
 
-    except Exception as e:
-        print("ERROR:", str(e))
+			blob_client.upload_blob(json.dumps(result), overwrite=True)
+			print("STORED IN BLOB (fallback)")
+
+	except Exception as e:
+		print("ERROR:", str(e))
