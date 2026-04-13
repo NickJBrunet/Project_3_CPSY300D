@@ -6,6 +6,7 @@ import {
 	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,
 	signInWithPopup,
+	signOut,
 	GoogleAuthProvider,
 	GithubAuthProvider,
 } from "firebase/auth";
@@ -43,6 +44,7 @@ export default function OAuthSection() {
 	const [mode, setMode] = useState<AuthMode>("signin");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
 	const [infoMessage, setInfoMessage] = useState<string | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -57,13 +59,20 @@ export default function OAuthSection() {
 	const resetState = () => {
 		setInfoMessage(null);
 		setErrorMessage(null);
+		setPassword("");
+		setConfirmPassword("");
 	};
 
 	const handleEmailSignup = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		setErrorMessage(null);
-		if (!email || !password) {
-			setErrorMessage("Email and password are required for sign up.");
+		if (!email || !password || !confirmPassword) {
+			setErrorMessage("Email, password, and confirm password are required for sign up.");
+			return;
+		}
+
+		if (password !== confirmPassword) {
+			setErrorMessage("Passwords do not match. Please retype your password.");
 			return;
 		}
 
@@ -76,7 +85,11 @@ export default function OAuthSection() {
 				phoneNumber: "",
 				provider: "email",
 			});
-			router.push("/dashboard");
+			await signOut(auth);
+			setInfoMessage("Account created successfully. Please sign in with your credentials.");
+			setMode("signin");
+			setPassword("");
+			setConfirmPassword("");
 		} catch (error: any) {
 			setErrorMessage(error?.message || "Unable to create account.");
 		} finally {
@@ -189,6 +202,19 @@ export default function OAuthSection() {
 								placeholder="Enter a secure password"
 							/>
 						</div>
+
+						{mode === "signup" ? (
+							<div>
+								<label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+								<input
+									type="password"
+									value={confirmPassword}
+									onChange={(event) => setConfirmPassword(event.target.value)}
+									className="mt-1 block w-full rounded-md border-gray-300 bg-white text-black shadow-sm placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+									placeholder="Retype your password"
+								/>
+							</div>
+						) : null}
 
 						<button
 							type="submit"
