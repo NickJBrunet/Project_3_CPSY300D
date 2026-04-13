@@ -41,4 +41,5 @@ jobs:
         with:
           app-name: 'diet-function'
           package: ./backend
-          remote-build: true
+          scm-do-build-during-deployment: true #forces Python build system
+          enable-oryx-build: true #installs requirements.txt
