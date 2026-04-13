@@ -19,11 +19,11 @@ const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7f7f"]
 
 function ChartCard({ title, description, children }: any) {
 	return (
-		<div className="bg-white p-4 shadow-lg rounded-lg">
+		<div className="bg-white p-6 shadow-lg rounded-lg">
 			<h3 className="font-semibold text-black">{title}</h3>
 			<p className="text-sm text-gray-600">{description}</p>
 
-			<div className="w-full h-48 mt-3">
+			<div className="w-full h-[400px] mt-4">
 				{children}
 			</div>
 		</div>
@@ -39,7 +39,7 @@ export default function ChartsGrid({ data }: any) {
 				Explore Nutritional Insights
 			</h2>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+			<div className="flex flex-col gap-8">
 
 				{/* BAR CHART */}
 				<ChartCard
@@ -71,7 +71,7 @@ export default function ChartsGrid({ data }: any) {
 								nameKey="Diet_type"
 								cx="50%"
 								cy="50%"
-								outerRadius={60}
+								outerRadius={120}
 							>
 								{charts.pie_chart?.map((_: any, i: number) => (
 									<Cell key={i} fill={COLORS[i % COLORS.length]} />
