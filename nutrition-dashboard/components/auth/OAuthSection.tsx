@@ -12,12 +12,41 @@ import {
 	linkWithCredential,
 	reauthenticateWithCredential,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, firestore } from "@/lib/firebaseClient";
+import { auth } from "@/lib/firebaseClient";
 
 const authProviders = {
 	google: new GoogleAuthProvider(),
 	github: new GithubAuthProvider(),
+};
+
+const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL ?? "http://localhost:7071/api";
+
+const syncUserProfile = async (payload: {
+	uid: string;
+	email: string;
+	phoneNumber: string;
+	provider: string;
+}) => {
+	const response = await fetch(`${apiBase}/auth/profile`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new Error(errorText || "Failed to sync user profile.");
+	}
+};
+
+const loadStoredPhone = async (uid: string) => {
+	const response = await fetch(`${apiBase}/auth/profile?uid=${encodeURIComponent(uid)}`);
+	if (!response.ok) {
+		return "";
+	}
+
+	const json = await response.json();
+	return json.phoneNumber || "";
 };
 
 type AuthMode = "signin" | "signup";
@@ -80,21 +109,13 @@ export default function OAuthSection() {
 	};
 
 	const loadStoredPhone = async (uid: string) => {
-		const snapshot = await getDoc(doc(firestore, "users", uid));
-		return snapshot.exists() ? snapshot.data()?.phoneNumber || "" : "";
-	};
+		const response = await fetch(`${apiBase}/auth/profile?uid=${encodeURIComponent(uid)}`);
+		if (!response.ok) {
+			return "";
+		}
 
-	const savePhoneForUser = async (uid: string, phoneNumber: string) => {
-		const currentEmail = auth.currentUser?.email || email;
-		await setDoc(
-			doc(firestore, "users", uid),
-			{
-				email: currentEmail,
-				phoneNumber,
-				updatedAt: new Date().toISOString(),
-			},
-			{ merge: true }
-		);
+		const json = await response.json();
+		return json.phoneNumber || "";
 	};
 
 	const sendPhoneVerification = async (phoneNumber: string) => {
@@ -121,6 +142,12 @@ export default function OAuthSection() {
 			const result = await createUserWithEmailAndPassword(auth, email, password);
 			setIsNewUser(true);
 			setPendingPhone(phone);
+			await syncUserProfile({
+				uid: result.user.uid,
+				email: result.user.email || email,
+				phoneNumber: phone,
+				provider: "email",
+			});
 			await sendPhoneVerification(phone);
 			setInfoMessage("Enter the SMS code to finish sign up and complete 2FA.");
 		} catch (error: any) {
@@ -155,6 +182,12 @@ export default function OAuthSection() {
 		setIsLoading(true);
 		try {
 			const result = await signInWithEmailAndPassword(auth, email, password);
+			await syncUserProfile({
+				uid: result.user.uid,
+				email: result.user.email || email,
+				phoneNumber: phone,
+				provider: "email",
+			});
 			const storedPhone = await loadStoredPhone(result.user.uid);
 			await beginSecondFactor(result.user.uid, storedPhone);
 		} catch (error: any) {
@@ -170,6 +203,12 @@ export default function OAuthSection() {
 		try {
 			const provider = authProviders[providerName];
 			const response = await signInWithPopup(auth, provider);
+			await syncUserProfile({
+				uid: response.user.uid,
+				email: response.user.email || "",
+				phoneNumber: response.user.phoneNumber || "",
+				provider: providerName,
+			});
 			const storedPhone = await loadStoredPhone(response.user.uid);
 			await beginSecondFactor(response.user.uid, storedPhone);
 		} catch (error: any) {
@@ -222,7 +261,12 @@ export default function OAuthSection() {
 				await reauthenticateWithCredential(currentUser, credential);
 			}
 
-			await savePhoneForUser(currentUser.uid, pendingPhone);
+			await syncUserProfile({
+				uid: currentUser.uid,
+				email: currentUser.email || email,
+				phoneNumber: pendingPhone,
+				provider: currentUser.providerData?.[0]?.providerId || "email",
+			});
 			setStage("success");
 			setInfoMessage("Phone verification complete. You are signed in.");
 		} catch (error: any) {
