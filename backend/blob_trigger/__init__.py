@@ -34,8 +34,8 @@ def main(blob: func.InputStream):
 		pie_chart = (
 			df["Diet_type"]
 			.value_counts()
-			.reset_index()
-			.rename(columns={"index": "Diet_type", "Diet_type": "count"})
+			.reset_index(name="count")
+			.rename(columns={"index": "Diet_type"})
 			.to_dict(orient="records")
 		)
 
