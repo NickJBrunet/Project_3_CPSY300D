@@ -4,139 +4,132 @@ import os
 from azure.storage.blob import BlobServiceClient
 from redis_client import get_redis_client
 
+
+def cors_response(body=None, status_code=200):
+    headers = {
+        "Access-Control-Allow-Origin": "https://ashy-meadow-04f9eb40f.1.azurestaticapps.net",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    }
+
+    return func.HttpResponse(
+        body=json.dumps(body) if isinstance(body, (dict, list)) else body,
+        status_code=status_code,
+        mimetype="application/json",
+        headers=headers,
+    )
+
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
-	route = req.route_params.get("route")
+    # handle preflight
+    if req.method == "OPTIONS":
+        return cors_response()
 
-	if route == "data":
-		try:
-			print("API HIT: /data")
+    route = req.route_params.get("route")
 
-			# TRY REDIS FIRST
-			r = get_redis_client()
+    if route == "data":
+        try:
+            print("API HIT: /data")
 
-			if r:
-				print("TRYING REDIS")
+            r = get_redis_client()
 
-				data = r.get("diet_data")
+            if r:
+                print("TRYING REDIS")
+                data = r.get("diet_data")
 
-				if data:
-					print("READ FROM REDIS")
+                if data:
+                    print("READ FROM REDIS")
+                    if isinstance(data, bytes):
+                        data = data.decode()
 
-					# 🔥 ensure bytes → string
-					if isinstance(data, bytes):
-						data = data.decode()
+                    return cors_response(data)
 
-					return func.HttpResponse(
-						data,
-						mimetype="application/json"
-					)
+                print("REDIS EMPTY")
+            else:
+                print("REDIS FAILED / NOT AVAILABLE")
 
-				print("REDIS EMPTY")
+            print("READ FROM BLOB")
 
-			else:
-				print("REDIS FAILED / NOT AVAILABLE")
+            connect_str = os.getenv("AzureWebJobsStorage")
+            blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
-			# FALLBACK TO BLOB
-			print("READ FROM BLOB")
+            blob_client = blob_service_client.get_blob_client(
+                container="cache",
+                blob="processed_data.json"
+            )
 
-			connect_str = os.getenv("AzureWebJobsStorage")
-			blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+            data = blob_client.download_blob().readall()
 
-			blob_client = blob_service_client.get_blob_client(
-				container="cache",
-				blob="processed_data.json"
-			)
+            print("READ FROM BLOB SUCCESS")
 
-			data = blob_client.download_blob().readall()
+            return cors_response(data)
 
-			print("READ FROM BLOB SUCCESS")
+        except Exception as e:
+            print("ERROR:", str(e))
+            return cors_response({"error": str(e)}, 500)
 
-			return func.HttpResponse(
-				data,
-				mimetype="application/json"
-			)
+    elif route == "recipes":
+        try:
+            print("API HIT: /recipes")
 
-		except Exception as e:
-			print("ERROR:", str(e))
-			return func.HttpResponse(
-				json.dumps({"error": str(e)}),
-				status_code=500,
-				mimetype="application/json"
-			)
-	elif route == "recipes":
-		try:
-			print("API HIT: /recipes")
+            r = get_redis_client()
+            cached_data = None
 
-			# LOAD CACHE (reuse your existing logic)
-			r = get_redis_client()
-			cached_data = None
+            if r:
+                print("TRYING REDIS")
+                cached_data = r.get("diet_data")
+                if cached_data:
+                    print("READ FROM REDIS")
+                    if isinstance(cached_data, bytes):
+                        cached_data = cached_data.decode()
 
-			if r:
-				print("TRYING REDIS")
-				cached_data = r.get("diet_data")
-				if cached_data:
-					print("READ FROM REDIS")
-					if isinstance(cached_data, bytes):
-						cached_data = cached_data.decode()
+            if not cached_data:
+                print("FALLBACK TO BLOB")
 
-			if not cached_data:
-				print("FALLBACK TO BLOB")
+                connect_str = os.getenv("AzureWebJobsStorage")
+                blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
-				connect_str = os.getenv("AzureWebJobsStorage")
-				blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+                blob_client = blob_service_client.get_blob_client(
+                    container="cache",
+                    blob="processed_data.json"
+                )
 
-				blob_client = blob_service_client.get_blob_client(
-					container="cache",
-					blob="processed_data.json"
-				)
+                cached_data = blob_client.download_blob().readall()
 
-				cached_data = blob_client.download_blob().readall()
+            data = json.loads(cached_data)
+            recipes = data.get("recipes", [])
 
-			data = json.loads(cached_data)
-			recipes = data.get("recipes", [])
+            diet = req.params.get("diet")
+            search = req.params.get("search")
+            page = int(req.params.get("page", 1))
+            limit = int(req.params.get("limit", 10))
 
-			# QUERY PARAMS
-			diet = req.params.get("diet")
-			search = req.params.get("search")
-			page = int(req.params.get("page", 1))
-			limit = int(req.params.get("limit", 10))
+            if diet and diet != "all":
+                recipes = [r for r in recipes if r["Diet_type"].lower() == diet.lower()]
 
-			# FILTER: diet
-			if diet and diet != "all":
-				recipes = [r for r in recipes if r["Diet_type"].lower() == diet.lower()]
+            if search:
+                search = search.lower()
+                recipes = [
+                    r for r in recipes
+                    if search in r["Recipe_name"].lower()
+                    or search in r["Cuisine_type"].lower()
+                ]
 
-			# SEARCH: keyword
-			if search:
-				search = search.lower()
-				recipes = [
-					r for r in recipes
-					if search in r["Recipe_name"].lower()
-					or search in r["Cuisine_type"].lower()
-				]
+            total = len(recipes)
 
-			total = len(recipes)
+            start = (page - 1) * limit
+            end = start + limit
+            paginated = recipes[start:end]
 
-			# PAGINATION
-			start = (page - 1) * limit
-			end = start + limit
-			paginated = recipes[start:end]
+            return cors_response({
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "results": paginated
+            })
 
-			return func.HttpResponse(
-				json.dumps({
-					"total": total,
-					"page": page,
-					"limit": limit,
-					"results": paginated
-				}),
-				mimetype="application/json"
-			)
+        except Exception as e:
+            print("ERROR:", str(e))
+            return cors_response({"error": str(e)}, 500)
 
-		except Exception as e:
-			print("ERROR:", str(e))
-			return func.HttpResponse(
-				json.dumps({"error": str(e)}),
-				status_code=500,
-				mimetype="application/json"
-			)
-
-	return func.HttpResponse("Invalid route", status_code=400)
+    return cors_response({"error": "Invalid route"}, 400)

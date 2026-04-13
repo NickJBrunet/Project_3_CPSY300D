@@ -13,7 +13,6 @@ SQL_CONNECTION_STRING = os.getenv("SQL_CONNECTION_STRING")
 def get_connection():
     if not SQL_CONNECTION_STRING:
         raise RuntimeError("SQL_CONNECTION_STRING is not configured.")
-
     return pyodbc.connect(SQL_CONNECTION_STRING, autocommit=True)
 
 
@@ -69,48 +68,46 @@ def upsert_user_profile(uid: str, email: str, phone_number: str, provider: str, 
         )
 
 
+def cors_response(body=None, status_code=200):
+    headers = {
+        "Access-Control-Allow-Origin": "https://ashy-meadow-04f9eb40f.1.azurestaticapps.net",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    }
+
+    return func.HttpResponse(
+        body=json.dumps(body) if body is not None else "",
+        status_code=status_code,
+        mimetype="application/json",
+        headers=headers,
+    )
+
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method == "OPTIONS":
+        return cors_response()
+
     route = req.route_params.get("route")
 
     if route != "profile":
-        return func.HttpResponse(
-            json.dumps({"error": "Route not found."}),
-            status_code=404,
-            mimetype="application/json",
-        )
+        return cors_response({"error": "Route not found."}, 404)
 
     if req.method == "GET":
         uid = req.params.get("uid")
         if not uid:
-            return func.HttpResponse(
-                json.dumps({"error": "Missing uid query parameter."}),
-                status_code=400,
-                mimetype="application/json",
-            )
+            return cors_response({"error": "Missing uid query parameter."}, 400)
 
         profile = fetch_user_profile(uid)
         if not profile:
-            return func.HttpResponse(
-                json.dumps({"error": "User not found."}),
-                status_code=404,
-                mimetype="application/json",
-            )
+            return cors_response({"error": "User not found."}, 404)
 
-        return func.HttpResponse(
-            json.dumps(profile),
-            status_code=200,
-            mimetype="application/json",
-        )
+        return cors_response(profile, 200)
 
     if req.method == "POST":
         try:
             payload = req.get_json()
         except ValueError:
-            return func.HttpResponse(
-                json.dumps({"error": "Invalid JSON payload."}),
-                status_code=400,
-                mimetype="application/json",
-            )
+            return cors_response({"error": "Invalid JSON payload."}, 400)
 
         uid = payload.get("uid")
         email = payload.get("email")
@@ -119,25 +116,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         password = payload.get("password")
 
         if not uid or not email:
-            return func.HttpResponse(
-                json.dumps({"error": "uid and email are required."}),
-                status_code=400,
-                mimetype="application/json",
-            )
+            return cors_response({"error": "uid and email are required."}, 400)
 
         password_hash = None
         if password:
             password_hash = hash_password(password)
 
         upsert_user_profile(uid, email, phone_number, provider, password_hash)
-        return func.HttpResponse(
-            json.dumps({"status": "ok"}),
-            status_code=200,
-            mimetype="application/json",
-        )
+        return cors_response({"status": "ok"}, 200)
 
-    return func.HttpResponse(
-        json.dumps({"error": "Method not allowed."}),
-        status_code=405,
-        mimetype="application/json",
-    )
+    return cors_response({"error": "Method not allowed."}, 405)
