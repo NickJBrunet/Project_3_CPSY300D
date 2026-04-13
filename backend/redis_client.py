@@ -1,6 +1,6 @@
 import os
 import redis
-from azure.identity import DefaultAzureCredential
+from azure.identity import ManagedIdentityCredential
 
 def get_redis_client():
     try:
@@ -8,7 +8,9 @@ def get_redis_client():
         port = int(os.getenv("REDIS_PORT"))
         username = os.getenv("REDIS_USERNAME")
 
-        credential = DefaultAzureCredential()
+        credential = ManagedIdentityCredential(
+            client_id=os.getenv("AZURE_CLIENT_ID")
+        )
         token = credential.get_token("https://redis.azure.com/.default")
 
 
