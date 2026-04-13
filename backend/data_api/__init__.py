@@ -1,28 +1,33 @@
+# import azure.functions as func
+# import json
+# import os
+# from azure.storage.blob import BlobServiceClient
+# from utils.redis_client import get_redis_client
+# import traceback
+
 import azure.functions as func
-import json
-import os
-from azure.storage.blob import BlobServiceClient
-from utils.redis_client import get_redis_client
-import traceback
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    try:
-        print("FUNCTION STARTED")
+    return func.HttpResponse("FUNCTION WORKS")
 
-        route = req.route_params.get("route")
-        print("Route:", route)
+# def main(req: func.HttpRequest) -> func.HttpResponse:
+#     try:
+#         print("FUNCTION STARTED")
 
-        # your existing logic here...
+#         route = req.route_params.get("route")
+#         print("Route:", route)
 
-    except Exception as e:
-        print("FULL ERROR:")
-        print(traceback.format_exc())
+#         # your existing logic here...
 
-        return func.HttpResponse(
-            json.dumps({"error": str(e)}),
-            status_code=500,
-            mimetype="application/json"
-        )
+#     except Exception as e:
+#         print("FULL ERROR:")
+#         print(traceback.format_exc())
+
+#         return func.HttpResponse(
+#             json.dumps({"error": str(e)}),
+#             status_code=500,
+#             mimetype="application/json"
+#         )
 
 # def main(req: func.HttpRequest) -> func.HttpResponse:
 # 	route = req.route_params.get("route")
