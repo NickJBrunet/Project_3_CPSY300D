@@ -73,6 +73,9 @@ export default function ChartsGrid({ data }: any) {
 								cx="50%"
 								cy="50%"
 								outerRadius={120}
+								label={({ name, percent }: any) =>
+									`${name} (${(percent * 100).toFixed(0)}%)`
+								}
 							>
 								{charts.pie_chart?.map((_: any, i: number) => (
 									<Cell key={i} fill={COLORS[i % COLORS.length]} />
