@@ -29,13 +29,42 @@ def main(blob: func.InputStream):
 			"Fat(g)"
 		]].to_dict(orient="records")
 
+		bar_chart = avg_macros.to_dict(orient="records")
+
+		pie_chart = (
+			df["Diet_type"]
+			.value_counts()
+			.reset_index()
+			.rename(columns={"index": "Diet_type", "Diet_type": "count"})
+			.to_dict(orient="records")
+		)
+
+		scatter_chart = df[[
+			"Protein(g)",
+			"Carbs(g)",
+			"Diet_type"
+		]].to_dict(orient="records")
+
+		heatmap = {
+			"xLabels": ["Protein(g)", "Carbs(g)", "Fat(g)"],
+			"yLabels": avg_macros["Diet_type"].tolist(),
+			"values": avg_macros[numeric_cols].values.tolist()
+		}
+
 		result = {
 			"summary": {
 				"total_records": int(len(df)),
 				"diet_types": int(df["Diet_type"].nunique())
 			},
 			"recipes": recipes,
-			"avg_macros": avg_macros.to_dict(orient="records")
+			"avg_macros": avg_macros.to_dict(orient="records"),
+
+			"charts": {
+				"bar_chart": bar_chart,
+				"pie_chart": pie_chart,
+				"scatter_chart": scatter_chart,
+				"heatmap": heatmap
+			}
 		}
 
 		print("DATA PROCESSED")
@@ -47,7 +76,6 @@ def main(blob: func.InputStream):
 			r.set("diet_data", json.dumps(result))
 			print("STORED IN REDIS")
 		else:
-			# fallback to blob
 			connect_str = os.getenv("AzureWebJobsStorage")
 			blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
