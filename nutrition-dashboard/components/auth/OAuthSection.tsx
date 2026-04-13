@@ -174,7 +174,7 @@ export default function OAuthSection() {
 								type="email"
 								value={email}
 								onChange={(event) => setEmail(event.target.value)}
-								className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+								className="mt-1 block w-full rounded-md border-gray-300 bg-white text-black shadow-sm placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
 								placeholder="you@example.com"
 							/>
 						</div>
@@ -185,12 +185,10 @@ export default function OAuthSection() {
 								type="password"
 								value={password}
 								onChange={(event) => setPassword(event.target.value)}
-								className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+								className="mt-1 block w-full rounded-md border-gray-300 bg-white text-black shadow-sm placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
 								placeholder="Enter a secure password"
 							/>
 						</div>
-
-
 
 						<button
 							type="submit"
@@ -200,25 +198,24 @@ export default function OAuthSection() {
 						</button>
 					</form>
 
-				<div className="border-t border-gray-200 pt-5">
-					<p className="text-sm font-medium text-gray-800 mb-3">Continue with</p>
-					<div className="flex flex-col gap-3 sm:flex-row">
-						<button
-							type="button"
-							onClick={() => handleOAuthLogin("google")}
-							className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50">
-							Sign in with Google
-						</button>
-						<button
-							type="button"
-							onClick={() => handleOAuthLogin("github")}
-							className="w-full rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-900 disabled:opacity-50">
-							Sign in with GitHub
-						</button>
+					<div className="border-t border-gray-200 pt-5">
+						<p className="text-sm font-medium text-gray-800 mb-3">Continue with</p>
+						<div className="flex flex-col gap-3 sm:flex-row">
+							<button
+								type="button"
+								onClick={() => handleOAuthLogin("google")}
+								className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50">
+								Sign in with Google
+							</button>
+							<button
+								type="button"
+								onClick={() => handleOAuthLogin("github")}
+								className="w-full rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-900 disabled:opacity-50">
+								Sign in with GitHub
+							</button>
+						</div>
 					</div>
-				</div>
-			</div>
-
-		</section>
-	);
+					</div>
+			</section>
+		);
 }

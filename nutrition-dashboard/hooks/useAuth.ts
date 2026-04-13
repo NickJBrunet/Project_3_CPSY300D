@@ -1,17 +1,25 @@
-// // hooks/useAuth.ts
-// import { useState, useEffect } from "react"
-// import { getMe } from "@/lib/api"
+"use client";
 
-// export function useAuth() {
-// 	const [user, setUser] = useState(null)
-// 	const [loading, setLoading] = useState(true)
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { auth } from "../lib/firebaseClient";
 
-// 	useEffect(() => {
-// 		getMe()
-// 			.then(setUser)
-// 			.catch(() => setUser(null))
-// 			.finally(() => setLoading(false))
-// 	}, [])
+export function useAuth() {
+	const [user, setUser] = useState<User | null>(null);
+	const [loading, setLoading] = useState(true);
 
-// 	return { user, loading, setUser }
-// }
+	useEffect(() => {
+		const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+			setUser(firebaseUser);
+			setLoading(false);
+		});
+
+		return () => unsubscribe();
+	}, []);
+
+	const logout = async () => {
+		await signOut(auth);
+	};
+
+	return { user, loading, logout };
+}
