@@ -84,45 +84,52 @@ def cors_response(body=None, status_code=200):
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    if req.method == "OPTIONS":
-        return cors_response()
+	try:
+		if req.method == "OPTIONS":
+			return cors_response()
 
-    route = req.route_params.get("route")
+		route = req.route_params.get("route")
 
-    if route != "profile":
-        return cors_response({"error": "Route not found."}, 404)
+		if route != "profile":
+			return cors_response({"error": "Route not found."}, 404)
 
-    if req.method == "GET":
-        uid = req.params.get("uid")
-        if not uid:
-            return cors_response({"error": "Missing uid query parameter."}, 400)
+		if req.method == "GET":
+			uid = req.params.get("uid")
+			if not uid:
+				return cors_response({"error": "Missing uid query parameter."}, 400)
 
-        profile = fetch_user_profile(uid)
-        if not profile:
-            return cors_response({"error": "User not found."}, 404)
+			profile = fetch_user_profile(uid)
+			if not profile:
+				return cors_response({"error": "User not found."}, 404)
 
-        return cors_response(profile, 200)
+			return cors_response(profile, 200)
 
-    if req.method == "POST":
-        try:
-            payload = req.get_json()
-        except ValueError:
-            return cors_response({"error": "Invalid JSON payload."}, 400)
+		if req.method == "POST":
+			try:
+				payload = req.get_json()
+			except ValueError:
+				return cors_response({"error": "Invalid JSON payload."}, 400)
 
-        uid = payload.get("uid")
-        email = payload.get("email")
-        phone_number = payload.get("phoneNumber", "")
-        provider = payload.get("provider", "unknown")
-        password = payload.get("password")
+			uid = payload.get("uid")
+			email = payload.get("email")
+			phone_number = payload.get("phoneNumber", "")
+			provider = payload.get("provider", "unknown")
+			password = payload.get("password")
 
-        if not uid or not email:
-            return cors_response({"error": "uid and email are required."}, 400)
+			if not uid or not email:
+				return cors_response({"error": "uid and email are required."}, 400)
 
-        password_hash = None
-        if password:
-            password_hash = hash_password(password)
+			password_hash = None
+			if password:
+				password_hash = hash_password(password)
 
-        upsert_user_profile(uid, email, phone_number, provider, password_hash)
-        return cors_response({"status": "ok"}, 200)
+			upsert_user_profile(uid, email, phone_number, provider, password_hash)
+			return cors_response({"status": "ok"}, 200)
 
-    return cors_response({"error": "Method not allowed."}, 405)
+		return cors_response({"error": "Method not allowed."}, 405)
+	except Exception as e:
+		print("FULL ERROR:", str(e))
+		import traceback
+		traceback.print_exc()
+
+		return cors_response({"error": str(e)}, 500)
