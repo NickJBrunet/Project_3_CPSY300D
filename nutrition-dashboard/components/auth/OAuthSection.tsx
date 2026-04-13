@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
 	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,
@@ -45,6 +46,13 @@ export default function OAuthSection() {
 	const [infoMessage, setInfoMessage] = useState<string | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
+	const router = useRouter();
+
+	useEffect(() => {
+		if (auth.currentUser) {
+			router.push("/dashboard");
+		}
+	}, [router]);
 
 	const resetState = () => {
 		setInfoMessage(null);
@@ -68,7 +76,7 @@ export default function OAuthSection() {
 				phoneNumber: "",
 				provider: "email",
 			});
-			setInfoMessage("Account created successfully.");
+			router.push("/dashboard");
 		} catch (error: any) {
 			setErrorMessage(error?.message || "Unable to create account.");
 		} finally {
@@ -93,7 +101,7 @@ export default function OAuthSection() {
 				phoneNumber: "",
 				provider: "email",
 			});
-			setInfoMessage("Signed in successfully.");
+			router.push("/dashboard");
 		} catch (error: any) {
 			setErrorMessage(error?.message || "Unable to sign in.");
 		} finally {
@@ -113,7 +121,7 @@ export default function OAuthSection() {
 				phoneNumber: "",
 				provider: providerName,
 			});
-			setInfoMessage("Signed in successfully.");
+			router.push("/dashboard");
 		} catch (error: any) {
 			setErrorMessage(error?.message || `Unable to sign in with ${providerName}.`);
 		} finally {

@@ -1,13 +1,12 @@
 "use client"
 
-import DashboardHeader from "@/components/dashboard/DashboardHeader"
-import ChartsGrid from "@/components/charts/ChartsGrid"
-import Filters from "@/components/dashboard/Filters"
-import ApiActions from "@/components/dashboard/ApiActions"
-import SecurityStatus from "@/components/dashboard/SecurityStatus"
-import OAuthSection from "@/components/auth/OAuthSection"
-import CleanupSection from "@/components/dashboard/CleanupSection"
-import Pagination from "@/components/dashboard/Pagination"
+import DashboardHeader from "../../components/dashboard/DashboardHeader"
+import ChartsGrid from "../../components/charts/ChartsGrid"
+import Filters from "../../components/dashboard/Filters"
+import ApiActions from "../../components/dashboard/ApiActions"
+import SecurityStatus from "../../components/dashboard/SecurityStatus"
+import CleanupSection from "../../components/dashboard/CleanupSection"
+import Pagination from "../../components/dashboard/Pagination"
 export default function DashboardPage() {
 	return (
 		<main className="bg-gray-100 min-h-screen">
@@ -18,7 +17,6 @@ export default function DashboardPage() {
 				<Filters />
 				<ApiActions />
 				<SecurityStatus />
-				<OAuthSection />
 				<CleanupSection />
 				<Pagination />
 			</div>
