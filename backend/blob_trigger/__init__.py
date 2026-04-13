@@ -4,7 +4,7 @@ import io
 import json
 import os
 from azure.storage.blob import BlobServiceClient
-from utils.redis_client import get_redis_client
+from redis_client import get_redis_client
 
 def main(blob: func.InputStream):
 	print("BLOB TRIGGER FIRED")
