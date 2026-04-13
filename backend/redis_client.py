@@ -1,26 +1,31 @@
-import redis
 import os
+import redis
+from azure.identity import DefaultAzureCredential
 
 def get_redis_client():
     try:
-        conn_str = os.getenv("REDIS_CONNECTION_STRING")
+        host = os.getenv("REDIS_HOST")
+        port = int(os.getenv("REDIS_PORT"))
+        username = os.getenv("REDIS_USERNAME")
 
-        host = conn_str.split(",")[0].split(":")[0]
-        port = int(conn_str.split(",")[0].split(":")[1])
-        password = conn_str.split("password=")[1].split(",")[0]
+        credential = DefaultAzureCredential()
+        token = credential.get_token("https://redis.azure.com/.default")
+
 
         r = redis.Redis(
             host=host,
             port=port,
-            password=password,
+            username=username,
+            password=token.token,
             ssl=True,
-            ssl_cert_reqs=None,
-            socket_connect_timeout=2,
-            socket_timeout=2
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            decode_responses=True
         )
 
         r.ping()
-        print("REDIS CONNECTED")
+        print(f"REDIS CONNECTED as {username}")
+
         return r
 
     except Exception as e:
