@@ -4,7 +4,7 @@
 			"name": "blob",
 			"type": "blobTrigger",
 			"direction": "in",
-			"path": "datasets/All_Diets.csv",
+			"path": "datasets/{name}",
 			"connection": "AzureWebJobsStorage"
 		}
 	]
