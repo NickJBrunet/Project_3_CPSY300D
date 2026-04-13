@@ -12,22 +12,22 @@ export default function SecurityStatus() {
 
 				<p className="text-sm text-gray-700">
 					Encryption:{" "}
-					<span className="text-yellow-600 font-semibold">
-						Pending
+					<span className="text-green-600 font-semibold">
+						In place
 					</span>
 				</p>
 
 				<p className="text-sm text-gray-700">
 					Access Control:{" "}
-					<span className="text-yellow-600 font-semibold">
-						Pending
+					<span className="text-green-600 font-semibold">
+						In place
 					</span>
 				</p>
 
 				<p className="text-sm text-gray-700">
 					Compliance:{" "}
-					<span className="text-yellow-600 font-semibold">
-						GDPR Compliant pending
+					<span className="text-green-600 font-semibold">
+						GDPR Compliant
 					</span>
 				</p>
 			</div>

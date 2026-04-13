@@ -38,18 +38,17 @@ export default function DashboardPage() {
 			<DashboardHeader />
 
 			<div className="container mx-auto p-6 space-y-10">
-				{/* 🔥 PASS DATA HERE */}
 				{loading ? (
 					<div className="text-center text-gray-500">Loading charts...</div>
 				) : (
 					<ChartsGrid data={data} />
 				)}
 
-				<Filters />
-				<ApiActions />
+				{/* <Filters /> */}
+				{/* <ApiActions /> */}
 				<SecurityStatus />
 				<CleanupSection />
-				<Pagination />
+				{/* <Pagination /> */}
 			</div>
 		</main>
 	)

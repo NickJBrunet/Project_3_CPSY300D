@@ -12,7 +12,8 @@ import {
 	Cell,
 	ScatterChart,
 	Scatter,
-	CartesianGrid
+	CartesianGrid,
+	Legend
 } from "recharts"
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7f7f"]
@@ -78,6 +79,7 @@ export default function ChartsGrid({ data }: any) {
 								))}
 							</Pie>
 							<Tooltip />
+							<Legend />
 						</PieChart>
 					</ResponsiveContainer>
 				</ChartCard>
@@ -101,22 +103,49 @@ export default function ChartsGrid({ data }: any) {
 				{/* HEATMAP */}
 				<ChartCard
 					title="Heatmap"
-					description="Macronutrient intensity."
+					description="Macronutrient intensity by diet."
 				>
-					<div className="grid grid-cols-3 gap-1 h-full text-xs">
-						{charts.heatmap?.values?.map((row: number[], i: number) =>
-							row.map((val: number, j: number) => (
-								<div
-									key={`${i}-${j}`}
-									className="flex items-center justify-center text-white"
-									style={{
-										backgroundColor: `rgba(99,102,241,${val / 100})`
-									}}
-								>
-									{val}
+					<div className="flex flex-col h-full">
+
+						{/* Y LABELS (Diet Types) */}
+						<div className="flex flex-col flex-1">
+							{charts.heatmap?.values?.map((row: number[], i: number) => (
+								<div key={i} className="flex flex-1">
+
+									{/* Diet label */}
+									<div className="w-24 text-xs flex items-center">
+										{charts.heatmap.yLabels[i]}
+									</div>
+
+									{/* Values */}
+									<div className="grid grid-cols-3 flex-1 gap-1 text-xs">
+										{row.map((val: number, j: number) => (
+											<div
+												key={j}
+												className="flex items-center justify-center text-white"
+												style={{
+													backgroundColor: `rgba(99,102,241,${val / 200})`
+												}}
+											>
+												{val.toFixed(1)}
+											</div>
+										))}
+									</div>
+
 								</div>
-							))
-						)}
+							))}
+						</div>
+
+						{/* X LABELS */}
+						<div className="grid grid-cols-4 mt-2 text-xs">
+							<div></div>
+							{charts.heatmap?.xLabels?.map((label: string, i: number) => (
+								<div key={i} className="text-center">
+									{label}
+								</div>
+							))}
+						</div>
+
 					</div>
 				</ChartCard>
 
