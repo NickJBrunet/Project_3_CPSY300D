@@ -24,3 +24,5 @@ jobs:
           action: "upload"
           app_location: "nutrition-dashboard"
           output_location: "out"
+        env:
+          NEXT_PUBLIC_AUTH_API_URL: ${{ secrets.NEXT_PUBLIC_AUTH_API_URL }}
